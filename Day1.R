@@ -1,0 +1,2105 @@
+setwd("/Users/FinnLo/Documents/Programming/R/BioInf")
+R.version
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(BiocManager)
+library(bookdown)
+# INTRO
+library(BiocStyle)
+library(Biostrings)
+library(tidyverse)
+library(janitor)
+library(GEOquery)
+library(biomaRt)
+library(cgdsr)
+library(ggdendro)
+library(scatterplot3d)
+
+# SCHULZ
+library(grid)
+library(org.Mm.eg.db)
+library(pheatmap)
+library(mogene10sttranscriptcluster.db)
+library(biomaRt)
+# RIEMER
+library(tidyverse)
+library(pheatmap)
+library(DESeq2)
+library(goseq)
+library(geneLenDataBase)
+library(GO.db)
+library(org.Mm.eg.db)
+# BENETELE
+library(BSgenome.Ecoli.NCBI.20080805)
+# BRANDT
+library(tidyverse)
+library(cowplot)
+library(viridis)
+library(scales)
+library(sp)
+library(dplyr)
+library(hexbin)
+#############################################################################################################################################################
+# loading everything ####################################################################################################################
+
+install.packages(c("BiocManager", "bookdown"))
+
+pack.intro <- c('BiocStyle','Biostrings', 'tidyverse', 'janitor' ,'GEOquery', 'biomaRt', 'cgdsr', 'ggdendro', 'scatterplot3d')
+BiocManager::install(pack.intro, update = F)
+
+pack.schulz <- c('grid', 'org.Mm.eg.db', 'mogene10sttranscriptcluster.db', 'pheatmap', 'biomaRt')
+install(pack.schulz, update = F)
+
+pack.riemer <- c('tidyverse', 'pheatmap','DESeq2', 'goseq', 'geneLenDataBase', 'GO.db', 'org.Mm.eg.db')
+BiocManager::install(pack.riemer, update = F)
+
+pack.bentele <- c('BSgenome.Ecoli.NCBI.20080805')
+install(pack.bentele, update = F)
+
+pack.brandt <- c("tidyverse", "cowplot", "viridis", "scales", "sp")
+BiocManager::install(pack.brandt, update = F)
+
+
+library(BiocManager)
+library(bookdown)
+library(Biostrings)
+install.packages('BiocStyle')
+
+install.packages(c("BiocManager", "bookdown"))
+
+BiocManager::install("BiocStyle")
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+library(BiocStyle)
+
+# CHAPTER 1 - Data Analysis in R ############################################################################################
+# Pipe shortcut mac Shift + Command + M
+
+# 1. Data loading
+# 2. Data formatting (tidying or harmonization)
+# 3. Data transformation
+# 4. Data modeling
+# 5. Data visualization
+# 6. Reporting
+
+
+# 1. Data loading 
+
+
+library(tidyverse)
+#### nested functions:
+x1 <- 1:5
+sqrt(
+  sum(
+    scale(
+      x1, center = T, scale = F
+    )^2
+  )
+)
+
+
+#### chain of functions:
+x1 %>%
+  scale(center = T, scale = F) %>% 
+  '^'(2) %>%
+  sum() %>%
+  sqrt()
+
+# Ex 1.1. Chains of Functions
+x = "a, b, c;d:e-1"
+x %>%
+  str_replace_all(";", ":") %>%
+  str_replace_all(":", ",") %>%
+  str_remove("-1") %>%
+  str_split(",", simplify = T)
+
+# Ex 1.2. Data Wrangling: loading and formatting
+library(readr)
+
+cdata <- read_tsv("clinical_data.tsv")
+cdata
+
+#### # A tibble: 12,430 x 9
+####    STUDY_ID CASE_ID OS_MONTHS OS_STATUS DFS_STATUS DFS_MONTHS   AGE SEX   GENDER
+####    <chr>    <chr>       <dbl> <chr>     <chr>           <dbl> <dbl> <chr> <chr> 
+####  1 laml_tc~ TCGA-A~      30.6 DECEASED  Recurred/~       16.1    46 Male  <NA>  
+####  2 laml_tc~ TCGA-A~       0   DECEASED  DiseaseFr~        0      61 Fema~ <NA>  
+####  3 laml_tc~ TCGA-A~      19   DECEASED  Recurred/~        7.7    23 Male  <NA>  
+####  4 laml_tc~ TCGA-A~      11.8 DECEASED  Recurred/~       11.4    59 Fema~ <NA>  
+####  5 laml_tc~ TCGA-A~      11.1 DECEASED  Recurred/~        8      51 Fema~ <NA>  
+####  6 laml_tc~ TCGA-A~       7.2 DECEASED  Recurred/~        6.7    18 Male  <NA>  
+####  7 laml_tc~ TCGA-A~      10.2 DECEASED  Recurred/~        8      40 Male  <NA>  
+####  8 laml_tc~ TCGA-A~      73   LIVING    DiseaseFr~       73      75 Male  <NA>  
+####  9 laml_tc~ TCGA-A~      18.5 DECEASED  Recurred/~       11.6    77 Male  <NA>  
+#### 10 laml_tc~ TCGA-A~       6.3 DECEASED  Recurred/~        4.9    70 Male  <NA>  
+#### # ... with 12,420 more rows
+
+# Sex and gender columns are not harmonised
+
+unique(cdata$SEX)
+unique(cdata$GENDER)
+
+# reformat columns
+cdata <- cdata %>% 
+  replace_na(list(SEX = "", GENDER = "")) %>% # replace all NA values by an empty string
+  unite("SEX", SEX, GENDER, sep = "") %>%     # unite the SEX and GENDER column into a new SEX column
+  mutate(SEX = toupper(SEX)) %>%              # convert all letters to uppercase
+  mutate(SEX = ifelse(SEX == "FEMALE" | SEX == "MALE", SEX, "UNKNOWN")) 
+
+ifelse(10 > 1, "stimmt", "falsch")
+ifelse(10 < 1, "stimmt", "falsch")
+ifelse(10 == 10 & 1 == 2, "stimmt", "falsch")
+ifelse(10 == 10 | 1 == 2, "stimmt", "falsch")
+
+
+# 1.3 Merging two data tables
+#### left_join()
+#### inner_join()
+#### right_join()
+#### bind_cols()
+#### bind_rows()
+
+aa <- tibble(aa = 1:3, bb = c("a", "b", "c"))
+bb <- tibble(aa = 3:5, cc = c("d", "e", "f"))
+
+aa %>% left_join(bb)
+aa %>% right_join(bb)
+aa %>% inner_join(bb)
+aa %>% full_join(bb)
+aa %>% bind_cols(bb)
+aa %>% bind_rows(bb)
+
+
+# 1.4 Data transformation: Selecting, filtering, and manipulating
+#### select()
+#### filter()
+cdata
+cdata %>% select(STUDY_ID, CASE_ID)
+cdata %>% select(1:5)
+cdata %>% select(-STUDY_ID, -CASE_ID)
+cdata %>% select(-(1:5))
+cdata %>% select(contains("OS"))
+
+cdata %>% filter(OS_STATUS == "DECEASED")
+cdata %>% filter(SEX != "MALE")
+cdata %>% filter(AGE > 50)
+cdata %>% filter(AGE > 50, SEX == "FEMALE")
+cdata %>% filter(OS_STATUS != "DECEASED", OS_STATUS != "LIVING")
+#### OS_STATUS columns isn't all caps, some data is wrong
+
+cdata <- cdata %>%
+  mutate(OS_STATUS = toupper(OS_STATUS))
+cdata %>% filter(OS_STATUS != "DECEASED", OS_STATUS != "LIVING")
+
+cdata %>% 
+  group_by(OS_STATUS, SEX) %>%
+  tally()
+
+cdata %>%
+  group_by(STUDY_ID, SEX) %>%
+  summarise(mean_age = mean(AGE, na.rm = T),
+            sd_age = sd(AGE, na.rm = T)) %>%
+  arrange(mean_age)
+
+#### a) write statement with group_by() and summarise() that reproduced tally() data
+#### b) write statement with group_by() and summarise() that calculates 
+#### median overall survival grouped by sex and study
+#### c) bonus: in what study do you find the lowest median value for patients of unknown sex
+
+?n()
+
+# a) 
+cdata %>%
+  group_by(OS_STATUS, SEX) %>%
+  summarise(n())
+
+# b) , c)
+cdata %>%
+  group_by(SEX, STUDY_ID) %>%
+  summarise(median_overall_survival = median(AGE, na.rm = T)) %>%
+  filter(SEX != "FEMALE", SEX != "MALE") %>%
+  arrange(desc(median_overall_survival))
+
+glimpse(cdata)
+
+# 1.5 Data Visualization Examples
+#### number of patients per study:
+cdata %>% 
+  group_by(STUDY_ID, SEX) %>% 
+  tally %>% 
+  ggplot(aes(STUDY_ID, n)) +
+  geom_bar(stat = "identity") +
+  coord_flip()
+
+#### Histogram of overall Survival:
+ggplot(cdata, aes(OS_MONTHS)) +
+  geom_histogram()
+
+#### Histogram of age in a subset of studies, colored by sex:
+filter(cdata, str_detect(STUDY_ID, "brca|gbm|coadread")) %>% 
+  ggplot(aes(AGE, fill = SEX)) +
+  geom_histogram(position = "dodge") +
+  facet_wrap(~STUDY_ID)
+
+#### Density plot of overall survival, grouped by disease free survival status:
+filter(cdata, OS_STATUS == "LIVING") %>% 
+  ggplot(aes(OS_MONTHS, color = DFS_STATUS)) +
+  geom_density()
+
+#### Scatter Plot pf age and overall survival values
+ggplot(cdata, aes(y = OS_MONTHS, x = AGE, color = SEX)) +
+  geom_point()
+
+# 1.6. Analysis of SARS-Cov2 vaccination data
+#### analyse the time series data on vaccination against SARS-Cov2
+#### download at Impfdashboard
+library(tidyr)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+setwd("/Users/FinnLo/Documents/Programming/R/BioInf")
+vac_deliveries  <- read_tsv("germany_deliveries_timeseries_v2.tsv")
+vac_by_state    <- read_tsv("germany_vaccinations_by_state.tsv")
+vac_timeseries  <- read_tsv("germany_vaccinations_timeseries_v2.tsv")
+
+glimpse(vac_deliveries)
+glimpse(vac_by_state)
+glimpse(vac_timeseries)
+
+#### Deliveries over time
+vac_deliveries %>%
+  #filter(region == "DE-BB") %>%
+  ggplot(aes(date, dosen, col = region)) + 
+  geom_point()
+
+#### better to look at cumulative delivery over time:
+#### define cum_dose
+
+glimpse(vac_deliveries$region)
+vac_deliveries %>%
+  #filter(region == c("DE-BY", "DE-BB", "DE-BW")) %>%
+  arrange(date) %>%
+  group_by(region) %>%
+  mutate(cum_doses = cumsum(dosen)) %>%
+  ggplot(aes(date, cum_doses, col = region)) +
+  geom_line()
+
+#### change code so that you plot types of vaccine delivered:
+vac_deliveries %>%
+  arrange(date) %>%
+  group_by(impfstoff) %>%
+  mutate(cum_doses = cumsum(dosen)) %>%
+  ggplot(aes(date, cum_doses, col = impfstoff)) +
+  geom_line()
+
+#### analyse delivered vaccine per state
+#### first calculate delivery until today:
+
+cumulative_deliveries_per_state <- vac_deliveries %>%
+  group_by(region) %>%
+  summarise(n = sum(dosen))
+
+#### now merge with vac per state --> define vac_rate
+vac_rate <- cumulative_deliveries_per_state %>%
+  left_join(vac_by_state, by = c("region"="code")) %>%
+  mutate(rate = vaccinationsTotal/n)
+
+#### plot as bar graph:
+vac_rate %>%
+  ggplot(aes(region, rate)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90))
+
+#### plot number of vacs per time:
+
+vac_timeseries %>%
+  ggplot(aes(date, dosen_differenz_zum_vortag)) +
+  geom_point() +
+  geom_line()
+
+#### weekdays have differing rates
+#### mark weekdays with color --> with wday() of lubridate
+
+library(lubridate)
+library(tidyverse)
+library(ggplot2)
+
+vac_timeseries %>%
+  mutate(day_of_week = date %>% wday() %>% as_factor()) %>%
+  ggplot(aes(date, dosen_differenz_zum_vortag, col = day_of_week)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~day_of_week)
+
+
+
+# CHAPTER 2 - EXERCISES #############################################################################################################
+# 2.1 Setup
+library(tidyverse)
+library(dplyr)
+
+# 2.2 Plotting data sampled from a normal distribution
+#### generate random data
+nd <- rnorm(1000, mean = 100, sd = 15)
+
+#### plot using base-R
+
+hist(nd)
+plot.ecdf(nd)
+
+#### convert data into tibble and use ggplot()
+dat <- tibble(iq = nd)
+
+#### plot histogram of data with ggplot
+??geom_vline # add reference lines, e.g. here on x-axis, but also horizontal or vertical
+ggplot(dat, aes(iq)) +
+  geom_histogram(fill = "blue") +
+  geom_vline(aes(xintercept = 100))
+
+#### plot cumulative distribution of the data
+ggplot(dat, aes(iq)) + 
+  stat_ecdf() +
+  geom_hline(yintercept = c(0,1), linetype = 4) +
+  labs(x = "Value", y = "Cumulative Distribution") +
+  theme_bw()
+
+
+# 2.3 Summarising a dataset
+#### given is the age of patients in a study
+#### 31, 39, 21, 45, 26, 78, 40, 23, 61, 40, 36, 59, 43
+
+#### Our dataset
+data <- tibble(age = c(31, 39, 21, 45, 26, 78, 40, 23, 61, 40, 36, 59, 43))
+
+#### a) calculate median, lower + upper quartile, 10% quantile
+data %>%
+  summarise(median = median(age),
+            lower  = quantile(age, 0.25),
+            upper  = quantile(age, 0.75),
+            '10%'  = quantile(age, 0.1)
+            )
+
+
+#### b) calculate mean, SD, variance, coefficient of variation
+
+data %>%
+  summarise(mean = mean(age),
+            sd   = sd(age),
+            var  = sd^2,
+            cv   = sd / mean
+            )
+
+#### c) draw boxplot + histogram
+
+data %>%
+  ggplot(aes(y = age)) +
+  geom_boxplot() +
+  theme_classic()
+
+data %>%
+  ggplot(aes(x = age)) +
+  geom_histogram() +
+  theme_classic()
+
+# 2.4 Estimating mean and SD
+i_max <- 100
+n <- 3
+random_numbers <- tibble( x=rnorm(n*i_max),
+                          i=rep(1:i_max,n) ) # give index 1 to 100
+random_numbers
+random_numbers %>% 
+  group_by( i ) %>% 
+  summarise( m=mean(x) ) %>% 
+  mutate( sd_mean=sd(m) ) %>%# summarise or mutate is fine here
+  ggplot(aes(m)) +
+  geom_histogram()
+
+std_mean <- function(i_max,n)  { # how to create function in R
+  random_numbers <- tibble( x=rnorm(n*i_max),
+                            i=rep(1:i_max,n) )
+  ret_value <- random_numbers %>% # return value 
+    group_by( i ) %>% # group by index
+    summarise( m = mean(x) ) %>% 
+    summarise( sd_mean=sd(m) ) %>% pull(sd_mean) # to only take the sd_mean, "." or "$" also works
+  return( ret_value )
+}
+
+#### Try out the function
+std_mean( 100, 3 )
+std_mean(100, 100)
+std_mean(100, 1000)
+
+results<- tibble(n=1:100,sd_mean=NA) 
+for (n in 2:100) {
+  results$sd_mean[n]=std_mean(100,n)
+}
+results
+
+results <- results %>%
+  mutate(theo_sd_mean = 1 / sqrt(n))
+results
+results %>%
+  ggplot(aes(n, sd_mean)) +
+  geom_point() +
+  geom_line(aes(y = theo_sd_mean), color = "red")
+
+#### Estimating Variance 
+results %>%
+  ggplot(aes(n, sd_mean^2)) +
+  geom_point() +
+  geom_line(aes(y = theo_sd_mean^2), color = "red")
+
+#### another option
+meanvals <- NA
+results <- matrix(NA, nrow = 1000, ncol = 3) %>%
+  as.data.frame()
+colnames(results) <- c("n_samples", "sd_mean", "variance_mean")
+
+for (n in 1:1000) {
+  for(i in 1:100){
+    meanvals[i] <- rnorm(n, mean = 0, sd = 1) %>%
+      mean()
+  }
+  results$n_samples[n]      <- n
+  results$sd_mean[n]        <- sd(meanvals)
+  results$variance_mean[n]  <- var(meanvals)
+}
+
+# 2.5 Multiple Testing 
+
+#### load finger data
+finger1 <- read.csv("~/Documents/Programming/R/BioInf/finger1.csv", skip = 2)
+finger1
+  
+#### OFFICIAL CLEANING
+finger_clean <- finger1 %>%
+  mutate(PLZ = ifelse(PLZ > 100, PLZ-100, PLZ)) %>% # sorts wrongly input PLZ (eg. 105 --> 5)
+  mutate(include = !is.na(PLZ)) %>%
+  dplyr::filter(include) %>%
+  mutate(id = 1:n()) %>% # counts all entries
+  dplyr::select(!include) %>% # includes all entries that have a PLZ
+  mutate(id =1:n()) %>% # counts all entries w/ PLZ now
+  pivot_longer(values_to = "length",
+               names_to = "finger",
+               cols = !c(PLZ, id)) %>% # all cols are taken over except PLZ + id
+  mutate(length = ifelse(length > 10, # if finger length is longer than 10 cm ( = unlikely)
+                         length / 10, # simply divides those numbers by 10 to get a realistic number
+                         length)) %>%
+  pivot_wider(values_from = "length", # the purpose of the pivot_longer was
+              names_from = "finger" ) # to clean all the data and then put it back into the old cols
+finger_clean %>%
+  ggplot(aes(L1))+
+  geom_point(aes(y = L2), col = "red") +
+  geom_smooth(aes(y = L2), col = "red", se = F) +
+  geom_point(aes(y = L3), col = "blue") +
+  geom_smooth(aes(y = L3), col = "blue", se = F) +
+  geom_point(aes(y = L4), col = "green") +
+  geom_smooth(aes(y = L4), col = "green", se = F) +
+  geom_point(aes(y = L5), col = "yellow") +
+  geom_smooth(aes(y = L5), col = "yellow", se = F)
+
+finger_clean %>%
+  pivot_longer(values_to = "value",
+               names_to = "col",
+               !id) %>%
+  ggplot(aes(value)) +
+  geom_histogram() +
+  facet_wrap(~col)
+
+finger_ratios <- finger_clean %>%
+  mutate(L1_L2 = L1/L2, L1_L3 = L1/L3, L1_L4 = L1/L4, L1_L5 = L1/L5,
+         L2_L3 = L2/L3, L2_L4 = L2/L4, L2_L5 = L2/L5,
+         L3_L5 = L3/L5,
+         L4_L5 = L4/L5) %>%
+  mutate(R1_R2 = R1/R2, R1_R3 = R1/R3, R1_R4 = R1/R4, R1_R5 = R1/R5,
+         R2_R3 = R2/R3, R2_R4 = R2/R4, R2_R5 = R2/R5,
+         R3_R5 = R3/R5,
+         R4_R5 = R4/R5)
+finger_ratios
+
+
+finger_ratios %>%
+  dplyr::select(PLZ, contains("_")) %>%
+  pivot_longer(values_to = "value",
+               names_to = "ratios",
+               !PLZ) %>%
+  mutate(PLZclass = ifelse(PLZ < 5, TRUE, FALSE)) %>%
+  ggplot(aes(PLZclass, value, col = PLZclass)) + 
+  geom_boxplot() +
+  facet_grid(~ratios) +
+  theme(axis.text.x = element_text(angle = 90))
+  
+p_values <- finger_ratios %>%
+  summarise(across(matches("_"), ~t.test(.[PLZ>=5], .[PLZ < 5],var.equal = T) $p.value))
+
+p.adjust(p_values, method = 'bonferroni')
+p.adjust(p_values, method = 'BH')
+
+
+# 2.6 Normalization of gene expression
+data_norm <- read.csv("normalisation.csv")
+data_norm
+
+plot(data_norm)
+
+data_norm %>%
+  ggplot(aes(set1, set2, label = Gen, col = Gen)) +
+  geom_point() +
+  geom_label()
+
+#### find gene with max change in expression
+maxgene <- data_norm %>%
+  mutate(change = abs(set1 - set2)) %>%
+  filter(change == max(change))
+  #%>% slice(1) in case of a tie
+maxgene
+
+# perform Z-Normalization (mean = 0, sd = 1)
+
+my_Scale = function(x) {
+  (x - mean(x)) / sd(x)
+}
+# Scale() does exactly the same, we don't have to define new function for this..
+
+z_norm_data <- data_norm %>%
+  mutate(across(c(set1, set2), my_Scale))
+z_norm_data
+
+library(tidyverse)
+library(dplyr)
+#### alternative to Z-normalization ==> do a quantile normalization
+quantile_norm_data <- data_norm %>%
+  pivot_longer(set1:set2, 
+               names_to = "set", 
+               values_to = "value") %>%
+  group_by(set) %>%
+  mutate(rank = rank(value)) %>%
+  ungroup() %>%
+  group_by(rank) %>%
+  mutate(value = mean(value)) %>%
+  ungroup() %>%
+  dplyr::select(-rank) %>%
+  pivot_wider(names_from = set,
+              values_from = value)
+
+quantile_norm_data
+
+#### find the gene with max change in expression after quant_norm
+new_maxgene <- quantile_norm_data %>%
+  mutate(change = abs(set1 - set2)) %>%
+  filter(change == max(change))
+  #%>% slice(1) in case of tie
+new_maxgene
+
+data_norm %>%
+  mutate(type = "original") %>%
+  rbind(z_norm_data %>%
+          mutate(type = "zscore")) %>%
+  rbind(quantile_norm_data %>%
+          mutate(type = "quantile")) %>%
+  ggplot(aes(set1, set2, col = Gen)) +
+  geom_point() +
+  facet_wrap(~ type, scale = "free")
+
+#### make Scatterplots with 
+#### raw data
+#### Z norm data
+#### quant norm data
+
+#### raw data
+data_norm %>%
+  ggplot(aes(set1, set2, col = Gen)) +
+  geom_point() +
+  theme_bw()
+
+#### Z norm data
+z_norm_data %>%
+  ggplot(aes(set1, set2, col = Gen)) +
+  geom_point() +
+  theme_bw()
+
+#### quant norm data
+quantile_norm_data %>%
+  ggplot(aes(set1, set2, col = Gen)) +
+  geom_point() +
+  theme_bw()
+
+
+
+
+# 2.7 Correlation
+data_norm <- read.csv("normalisation.csv")
+data_norm
+
+#### calculate Pearson-Correlation between all raw and diff. normalized samples
+data_norm %>%
+  left_join(z_norm_data, by = "Gen", suffix = c("", "z")) %>%
+  left_join(quantile_norm_data, by = "Gen", suffix  = c("", "q")) %>%
+  select_if(is.numeric) %>%
+  cor(method = "pearson")
+#### calculate Rank-Correlation between all raw and diff. normalized samples
+data_norm %>%
+  left_join(z_norm_data, by = "Gen", suffix = c("", "z")) %>%
+  left_join(quantile_norm_data, by = "Gen", suffix  = c("", "q")) %>%
+  select_if(is.numeric) %>%
+  cor(method = "kendall")
+
+# 2.8 Linear Regression
+Water <- tibble(Gewaesser   = c("Fluss", "Teich", "Hafen", "See", "Bach"),
+                Schadstoffe = c(8,7,10,4,3),
+                Algen       = c(1500, 2100, 250, 3500, 3400))
+Water
+#Water <- data.frame(Water)
+
+#### Visualize + linReg
+Water %>%
+  ggplot(aes(Schadstoffe, Algen)) +
+  geom_point() +
+  geom_smooth(method = "lm") + # gray area == Standard Error, can be ignored with: , se = F
+  ggtitle("Schadstoffe vs. Algen")
+  theme_bw()
+
+#### Calculate mean, SD of algae conc. and pollution conc.
+summary(Water)
+sd(Water$Schadstoffe)
+sd(Water$Algen)
+mean(Water$Schadstoffe)
+mean(Water$Algen)
+cov(Water$Schadstoffe, Water$Algen) # Covariance of x and y
+cor(Water$Schadstoffe, Water$Algen) # Correlation of x and y
+
+#### calc linReg
+lm(Algen ~ Schadstoffe, Water)
+# y = m * x + b
+# intercept ... y-value at x = 0
+# slope is negative here
+
+
+# 2.9 Clustering
+Cl_Data <- tibble(sample1 = c(1,2,3),
+                  sample2 = c(2,4,3),
+                  sample3 = c(4,8,12))
+Cl_Data
+
+library(tibble)
+library(scatterplot3d)
+
+scatterplot3d(x = Cl_Data[1,], 
+              y = Cl_Data[2,], 
+              z = Cl_Data[3,])
+
+#### Calculate distance matrix w/ Manhattan distance + Pearson Correlation as metric
+#### functions --> dist() and as.dist()
+distM <- Cl_Data %>%
+          t() %>%
+          dist(method = "manhattan")
+distM
+distP <- as.dist(1-cor(Cl_Data))
+distP
+
+#### cluster data with hierarchical clustering with one of the two dist. matrices
+hM <- distM %>% hclust(method = "average")
+hP <- distP %>% hclust(method = "average")
+
+#### draw dendrogram (pot new package needed)
+library(ggdendro)
+
+ggdendrogram(hM) + ggtitle("Manhattan")
+ggdendrogram(hP) + ggtitle("Pearson Col.")
+
+# CHAPTER 3 - SCHULZ ET AL. - MICROARRAYS ########################################
+
+# 3.1 Loading libraries and data
+library(tidyverse)
+library(dplyr)
+library(viridis)
+library(viridisLite)
+
+eset <- read_tsv(file = "eset_schulz.tsv.gz")
+go_0019827  <- read_tsv("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/select.txt", col_names = F)
+
+# 3.2 Calculate distances
+eset_red <- eset %>% dplyr::select(-ensembl, -symbol)
+eset_red
+
+#### use dist() to calculate different distance matrices
+#### available distances: method = "manhattan" "euclidian", "maximum", "binary", "canberra", "minkowski"
+distanceMat <- eset_red %>%
+  t() %>%
+  dist() %>%
+  as.matrix()
+distanceMat
+
+dis_Mat1 <- eset_red %>%
+  t() %>%
+  dist(method = "manhattan") %>% 
+  as.matrix()
+dis_Mat1
+
+
+#### tidy up the table:
+  #### turn it into a tibble
+dis_table <- as_tibble(dis_Mat1, rownames = "Sample1") %>%
+  #### put each obs. in one row
+  pivot_longer(cols = -Sample1, 
+               names_to = "Sample2", 
+               values_to = "distance") %>%
+  #### remove "B" and "C" from sample names
+  mutate(Sample1 = str_remove(Sample1, "[BC]"),
+         Sample2 = str_remove(Sample2, "[BC]")) %>%
+  #### split Sample names into line + time
+  separate(Sample1, c("line1", "time1"), sep = "_", convert = T) %>%
+  separate(Sample2, c("line2", "time2"), sep = "_", convert = T)
+dis_table
+
+#### we want to look at similarities between XX and XO only  -> filter for all distances between line1 and line2
+distXXvsXO <- dis_table %>% 
+              filter(line1 == "XX",
+                     line2 == "XO")
+#### for easier comparison -> rescale distances to a range b/w 0 and 1
+#### after scaling we can immediately plot dist. as a heat map
+#### NO clustering in rows or columns, b/c this would change ordering in time
+distXXvsXO <- distXXvsXO %>% mutate(normalized = (distance - min(distance)) / (max(distance)-min(distance)))
+distXXvsXO %>%
+  ggplot(aes(time2, time1, fill = normalized)) +
+  geom_tile() +
+  scale_fill_viridis() +
+  labs(x = "XO", y = "XX")
+
+#### XO vs. XY cells
+distXOvsXY <- dis_table %>%
+  filter(line1 == "XO",
+         line2 == "XY")
+distXOvsXY <- distXOvsXY %>% mutate(normalized = (distance - min(distance)) / (max(distance)-min(distance)))
+distXOvsXY %>%
+  ggplot(aes(time2, time1, fill = normalized)) +
+  geom_tile() +
+  scale_fill_viridis() +
+  labs(x = "XY", y = "XO")
+
+#### XX vs. XY cells
+distXXvsXY <- dis_table %>%
+  filter(line1 == "XX",
+         line2 == "XY")
+distXXvsXY <- distXXvsXY %>% mutate(normalized = (distance - min(distance)) / (max(distance)-min(distance)))
+distXXvsXY %>%
+  ggplot(aes(time2, time1, fill = normalized)) +
+  geom_tile() +
+  #grayscale ==> scale_fill_gradient()
+  scale_fill_viridis() +
+  labs(x = "XY", y = "XX")
+
+
+
+# 3.3 Annotation and PCA
+#### Second Part: Goal --> reproduce fig. 2d with PCA of genes w/ GO-Term "Stem cell population maintenance"
+#### How many genes are annotated "-,-" for mouse? 182 genes
+#### How many genes are annotated "-,-" for human? 151 genes
+
+go_0019827  <- read_tsv("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/select.txt", col_names = F)
+eset        <- read_tsv(file = "eset_schulz.tsv.gz")
+
+genes_stem_cell <- go_0019827 %>%
+                  pull(X2) %>%
+                  unique()
+genes_other <- eset %>%
+                  pull(symbol) %>%
+                  unique()
+
+#### extract genes related to the GO term, using the expression matrix from earlier (eset_red)
+stemcellEset <- eset %>%
+                filter(symbol %in% genes_stem_cell)
+
+
+#### use prcomp() --> performs principal components analysis on the dataset given
+stemcellEset_Matrix <- stemcellEset %>%
+                      dplyr::select(-ensembl, -symbol) %>%
+                      as.matrix()
+
+pcaAll <- stemcellEset_Matrix %>%
+  t() %>%
+  prcomp()
+
+plot(pcaAll$x, las = 1) # las = axis label orientation
+
+#### 3 trajectories --> do cells from the same line behave similarly?
+#### use ggplot to define colors for XX, XO, XY in PCA with color ad illustrate time w/ point size
+
+#### filter and change PCA data first:
+pcaAll1 <- pcaAll$x %>% 
+  as_tibble(rownames = "sample") %>%
+  mutate(sample = str_remove(sample, "[BC]")) %>%
+  separate(sample, c("line", "time"), sep = "_", convert = T) %>%
+  dplyr::select(line, time, PC1, PC2)
+
+# PC1 and PC2 represent the stem cell maintainers, better represent this signature
+pcaAll1 %>%
+  ggplot(aes(PC1, PC2, col = line, size = time)) +
+  geom_point()
+
+
+# 3.4 Quantify delay
+#### compare delays for all genes in XX vs. XO by calculating the delay scores
+#### (1) SMOOTHING:   apply running average over 24h to smooth out time series
+#### (2) SLOPE:       calculate slope (i.e. differentiate the time series)
+#### (3) DELAY SCORE: calculate average absolute slope
+####                  numbers == score on how quickly a gene is regulated
+####                  diff. between scores for diff. datasets allows assessment of 
+####                  how much each time series is delayed in respect to another.
+
+
+#### (1) SMOOTHING: apply running average over 24h to smooth out time series
+smooth <- function(x) {
+  stats::filter(x, rep(1/24, 24))
+}
+
+eset        <- read_tsv(file = "eset_schulz.tsv.gz")
+go_0019827  <- read_tsv("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/select.txt", col_names = F)
+stemcellEset_Matrix
+
+smoothed_eset <- eset %>%
+  pivot_longer(cols = XOB_0:XYC_84,
+               names_to = "samples",
+               values_to = "values") %>%
+  mutate(samples = str_remove(samples, "[BC]")) %>%
+  separate(samples, c("line", "time"), sep = "_", convert = T) %>%
+  group_by(ensembl, symbol, line) %>%
+  arrange(time) %>%
+  mutate(smoothed = smooth(values)) %>%
+  ungroup()
+smoothed_eset
+
+
+Nanog <- smoothed_eset %>%
+  filter(symbol == "Nanog") %>%
+  mutate(days = time / 24) %>%
+  ggplot(aes(x = days, color = line)) +
+  geom_point(aes(y = values),alpha = 0.5) +
+  geom_smooth(aes(y = values), size = 2)
+Nanog
+  
+
+#### (2) SLOPE: calculate slope
+diff_eset <- smoothed_eset %>%
+  group_by(ensembl, 
+           symbol, 
+           line) %>%
+  arrange(time) %>%
+  mutate(difference = c(diff(smoothed),NA))
+
+diff_eset %>%
+  filter(symbol == "Nanog") %>%
+  ggplot(aes(time, 
+             difference, 
+             col = line)) +
+  geom_line()
+
+#### (3) DELAY SCORE: calculate average absolute slope
+#### by averaging the absolute difference
+#### use pivot_wider() to generate 1 col per cell line
+#### then calculate delay score by subtracting delay of one cell line fr/ another
+
+# CORRECT THIS!
+mean_diff <- diff_eset %>%
+  filter(!is.na(difference)) %>%
+  group_by(symbol, ensembl, line) %>%
+  summarise(mean_delay = mean(abs(difference))) %>%
+  pivot_wider(names_from = line, 
+              values_from = mean_delay)
+mean_diff
+
+##### XO vs. XX
+score_delay <- mean_diff %>%
+  mutate(delay_score = XO-XX)
+
+score_delay_stem <- score_delay %>%
+  left_join(tibble(symbol = unique(go_0019827$X2), stem = T))
+  
+stemT <- score_delay_stem %>%
+  filter(stem == T) %>%
+  pull(delay_score)
+
+stemNA <- score_delay_stem %>%
+  filter(is.na(stem)) %>%
+  pull(delay_score)
+
+test <- t.test(stemT, stemNA)
+
+ggplot(score_delay_stem, aes(delay_score, color = stem)) +
+  ggtitle(paste0("Delay score XO vs. XX (p = ",round(test$p.value,6),")")) +
+  geom_density()
+# p-value = 0.0003876
+
+
+#### Here we compared XO vs. XX, how about the other comparisons?
+##### XX vs. XY
+score_delay <- mean_diff %>%
+  mutate(delay_score = XX-XY)
+
+score_delay_stem <- score_delay %>%
+  left_join(tibble(symbol = unique(go_0019827$X2), stem = T))
+
+stemT <- score_delay_stem %>%
+  filter(stem == T) %>%
+  pull(delay_score)
+
+stemNA <- score_delay_stem %>%
+  filter(is.na(stem)) %>%
+  pull(delay_score)
+
+test <- t.test(stemT, stemNA)
+
+ggplot(score_delay_stem, aes(delay_score, color = stem)) +
+  ggtitle(paste0("Delay score XX vs. XY (p = ",round(test$p.value,6),")")) +
+  geom_density()
+# p-value = 0.001819
+
+
+##### XO vs. XY
+score_delay <- mean_diff %>%
+  mutate(delay_score = XO-XY)
+score_delay
+
+score_delay_stem <- score_delay %>%
+  left_join(tibble(symbol = unique(go_0019827$X2), stem = T))
+
+stemT <- score_delay_stem %>%
+  filter(stem == T) %>%
+  pull(delay_score)
+
+stemNA <- score_delay_stem %>%
+  filter(is.na(stem)) %>%
+  pull(delay_score)
+
+test <- t.test(stemT, stemNA)
+# p-value = 0.6818
+
+  ggplot(score_delay_stem, aes(delay_score, color = stem)) +
+  ggtitle(paste0("Delay score XO vs. XY (p = ",round(test$p.value,4),")")) +
+  geom_density()
+
+
+# all p-values gathered:
+# p-value = 0.0003876   --> XX-XO
+# p-value = 0.001819    --> XX-XY
+# p-value = 0.6818      --> X0-XY
+
+
+
+
+# CHAPTER 4 - RIEMER ET AL. 2017 - RNA-SEQ ####################################
+
+# 4.1 Loading libraries and data (Riemer)
+library(matrixStats)
+library(GO.db)
+library(pheatmap)
+library(DESeq2)
+library(goseq)
+library(tidyverse)
+library(ggplot2)
+library(tidyr)
+library(stringr)
+
+
+Expression_Data <- read_delim("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/expression_matrix.tab", col_names = F, delim = "\t")
+Exp_Design      <- read_delim("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/samples.tsv", delim = "\t", col_names = T)
+Annotations     <- read_delim("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/annotations.tsv", delim = " ")
+
+# 4.2 Data Exploration
+#### How is it organized?
+glimpse(Expression_Data)
+dim(Expression_Data)
+View(Expression_Data)
+arrange(Expression_Data)
+
+glimpse(Exp_Design)
+dim(Exp_Design)
+View(Exp_Design)
+arrange(Exp_Design)
+
+glimpse(Annotations)
+dim(Annotations)
+View(Annotations)
+arrange(Annotations)
+
+#### For how many genes do we have expression data?
+# 47643 genes, 64884
+#### How many samples are there?
+# 12 columns w/ samples? 6 samples
+#### How many replicates?
+# 2 replicates
+
+#### Reorganise data and provide sensible names for the columns:
+colnames(Expression_Data) <- make.unique(c("ensg", Exp_Design$oncogene))
+
+Expression_Data %>%
+  dplyr::select("KRAS", "KRAS.1", 
+                "PIK3CA+CTNNB1", "PIK3CA+CTNNB1.1", 
+                "PIK3CA", "PIK3CA.1", 
+                "CTNNB1", "CTNNB1.1", 
+                "BRAF", "BRAF.1", 
+                "cntrl", "cntrl.1")
+
+#### Annotate the columns of expression matrix using the 
+#### gene names from the annotation file --> simply add a new column!
+
+data <- Annotations %>%
+  dplyr::select(-transcript_type) %>%
+  distinct() %>%
+  right_join(Expression_Data)
+
+
+#data <- Expression_Data %>%
+#  left_join(Annotations)
+
+#### the data == Ribo-minus ... total RNA w/o ribosomal RNA (should be depleted)
+#### how successful was that?
+#### what is annotated?
+
+geneIDsRRNA <- Annotations %>%
+  filter(str_detect(transcript_type, "rRNA")) %>%
+  pull(ensg) %>%
+  unique()
+
+
+data_to_plot <- data %>%
+  filter(ensg %in% geneIDsRRNA) %>%
+  dplyr::select(-ensg, -gene_name)
+pheatmap(data_to_plot, show_rownames = F)
+
+f_data_to_plot <- data_to_plot %>% filter(rowSums(.)>0)
+
+pheatmap(f_data_to_plot, show_rownames = F)
+
+#### there are only 3 abundant rRNA genes, big diff. between samples
+#### --> remove all rRNAs from the data
+
+data <- data %>%
+  filter(!ensg %in% geneIDsRRNA)
+
+#### use ggplot boxplots/histograms
+####    histograms:  good for more detailed understanding of single-sample  distributions
+####    boxplots:    good for comparing samples
+
+#### Data pivoted
+data_piv <- data %>%
+  pivot_longer(cols = c("KRAS",  
+                        "PIK3CA+CTNNB1", 
+                        "PIK3CA+CTNNB1.1", 
+                        "PIK3CA", 
+                        "CTNNB1", 
+                        "BRAF", 
+                        "PIK3CA.1", 
+                        "KRAS.1",
+                        "CTNNB1.1", 
+                        "cntrl", 
+                        "cntrl.1",
+                        "BRAF.1"
+                        ),
+               values_to = "value",
+               names_to = "Sample"
+               )
+
+#### all Samples as histograms, wrapped
+data_piv %>%
+  ggplot(aes(value + 1)) +
+  geom_histogram() +
+  facet_wrap(~Sample)
+
+data_piv %>%
+  ggplot(aes(log2(value + 1), fill = Sample)) +
+  geom_histogram() +
+  facet_wrap(~Sample)
+
+#### all Samples as Boxplots
+data_piv %>%
+  ggplot(aes(log2(value + 1), Sample, col = Sample)) +
+  geom_boxplot()
+
+#### geom_density
+data_piv %>%
+  ggplot(aes(log2(value + 1), col = Sample)) +
+  geom_density() +
+  facet_wrap(~Sample)
+
+#### geom_violin
+data_piv %>%
+  ggplot(aes(log2(value + 1), Sample, col = Sample)) +
+  geom_violin()
+
+librarySize <- data %>%
+  summarise(across(where(is.numeric),sum)) %>%
+  pivot_longer(everything(), names_to = "Sample",
+               values_to = "size")
+
+
+# 4.3. Normalization of the RNAseq data
+#### use RPM (reads per miilion)
+
+rpm <- data %>%
+  mutate_if(is.numeric, ~. / (sum(.) / 10^6))
+
+#### test whether the sum of each column has the same value
+rpm$KRAS %>% sum()
+rpm$BRAF %>% sum()
+
+library(DESeq2)
+
+#### Estimating Library Size --> DESeq2 (needs a specific format)
+deseq_Data <- DESeqDataSetFromMatrix(countData = data[ ,3:14],
+                                     colData = Exp_Design,
+                                     design = ~oncogene)
+feature_Data <- data.frame(gene = data$ensg)                                     
+mcols(deseq_Data) <- DataFrame(mcols(deseq_Data), feature_Data)
+
+#### get rid of all genes with no reads:
+deseq_Data <- deseq_Data[ rowSums(counts(deseq_Data)) > 1,]
+deseq_Data <- estimateSizeFactors(deseq_Data)
+
+sizeFactors(deseq_Data)
+
+libsize_Estimates <- tibble(read_count = librarySize$size,
+                            deseq_Lib_Size = sizeFactors(deseq_Data))
+#### library size estimates based on reads per miilion
+#### correlates with deseq2, but they are NOT IDENTICAL
+libsize_Estimates %>%
+  ggplot(aes(read_count, deseq_Lib_Size)) +
+  geom_point()
+
+
+#### look at deseq2-normalized data:
+norm_Counts <- deseq_Data %>%
+  counts(normalized = T) %>%
+  as_tibble()
+
+rownames(norm_Counts) <- deseq_Data %>%
+  mcols %>%
+  .$gene
+
+reform_data <- norm_Counts %>%
+                  pivot_longer(everything(),
+                               names_to = "Sample",
+                               values_to = "value")
+
+reform_data %>%
+  ggplot(aes(x = value, fill = Sample)) +
+  geom_density(alpha = 0.2) +
+  scale_x_log10() +
+  geom_vline(aes(xintercept = 75))
+
+reform_data %>%
+  ggplot(aes(log2(value), fill = Sample)) +
+  geom_histogram() +
+  facet_wrap(~Sample)
+
+#### now the histograms look much more similar
+
+#### we want to make a subset of data with EXPRESSED genes only
+#### make cut-off at 75 counts (== "dip" in the histogram)
+#### we only look at samples expressed over 75 in at least 2 samples
+#### == selected normalized count
+sel_norm_count <- norm_Counts %>%
+  filter(rowSums(.>75)>1)
+
+#### check
+sel_norm_count %>% dim()
+
+# 4.4 Analyse
+
+pca <- sel_norm_count %>%
+  t() %>%
+  prcomp()
+
+PCA_sdev <- tibble(sdev = pca$sdev,
+                   PC = pca$x %>% colnames) %>%
+  mutate(var_exp = sdev^2 / (sum(sdev^2))) %>% # var_exp == Variance explained
+  mutate(PC = factor(PC, levels = PC))
+
+PCA_sdev %>%
+  ggplot(aes(PC, var_exp)) +
+  geom_col()
+#### shows the variances (y axis) associated w/ PCs (x axis)
+#### useful for deciding how many PCs to retain for further analysis
+#### here the first two explain most variability
+#### now we can plot them
+
+pca_X <- pca$x %>%
+  as_tibble() %>%
+  dplyr::select(PC1, PC2) %>%
+  mutate(Sample = rownames(pca$x))
+
+pca_X %>%
+  ggplot(aes(PC1, PC2, label = Sample)) +
+  geom_label()
+#### in RNA-Seq the var grows with the mean
+#### e.g. f one performs PCA directly on a matrix of normalized read counts, 
+#### the result typically depends only on the few most strongly expressed genes 
+#### because they show the largest absolute differences between samples. 
+#### As a solution, DESeq2 offers the regularized–logarithm transformation, 
+#### or RLOG for short
+
+
+#### redo the PCA on rlog transformed data, by using DESeq2 rlogTransformation()
+#### changes?
+#### use plotPCA() instead of ggplot() 
+#### --> specifically designed to create / plot data from deseq2 dataset
+
+?rlogTransform
+
+r_deseq_Data <- rlogTransformation(deseq_Data)
+
+
+
+
+plotPCA(r_deseq_Data, intgroup = "oncogene") # how to specify colors
+
+#### In both cases, most samples cluster on the left side, 
+#### and the two BRAF samples are in a different side, and are different 
+#### mainly due to PC1. This reflects the biology of the system, 
+#### as BRAF is a very strong oncogene and eliminates basically all stem cells 
+#### in the culture. In the second PCA the replicates always cluster together, 
+#### except for one KRAS sample. Note that the PC1 already covers 84% of the variance. 
+#### To investigate this further, let’s have a look at the 1000 most varying genes 
+#### in the data set:
+
+most_var_genes <- sel_norm_count %>%
+  mutate(sd = as.matrix(.) %>%
+           rowSds()) %>%
+  arrange(-sd) %>%
+  dplyr::slice(1:1000) %>% ### index rows by their integer locations, can also be slice_head
+  dplyr::select(-sd) %>%
+  as.matrix()
+
+pheatmap(most_var_genes, show_rownames = F)  
+#### we don't see much.. a few genes have a much higher expression governing the color scale
+#### what happens, when the rows are scaled:
+
+
+pheatmap(most_var_genes, show_rownames = F, scale = "row")
+#### Much better!
+
+#### 1000 most highly expressed genes?
+most_high_genes <- sel_norm_count %>%
+  mutate(mean = as.matrix(.) %>%
+           rowMeans2()) %>%
+  arrange(desc(mean)) %>%
+  dplyr::slice(1:1000) %>% ### index rows by their integer locations, can also be slice_head
+  dplyr::select(-mean) %>%
+  as.matrix()
+
+#### in reality one would filter for genes with median in top50% and then
+#### at the 1000 highest varying genes
+#### any changes in clustering?
+
+ggplot(log2(sel_norm_count+1), aes(cntrl, cntrl.1)) +
+  geom_point(size = 0.5)
+  
+ggplot(log2(sel_norm_count+1), aes(cntrl, BRAF)) +
+  geom_point(size = 0.5)
+
+ggplot(log2(sel_norm_count+1), aes(BRAF, BRAF.1)) +
+  geom_point(size = 0.5)  
+
+ggplot(log2(sel_norm_count+1), aes(BRAF, KRAS)) +
+  geom_point(size = 0.5)  
+
+#### look at the correlation b/w diff. samples
+
+pheatmap(cor(log2(sel_norm_count+1)))
+#### Here, you can note that the BRAF samples are very dissimilar from the rest,
+#### and that one of the KRAS samples seems to be an outlier which corresponds 
+#### to the results of the PCA (with rlog).
+#### To test differential expression, it is important to know how “noisy” 
+#### the expression of a gene is. To estimate this, DESeq2 fits a 
+#### model of dispersion (variance divided by mean) to the replicates, which we can then plot.
+
+deseq_Data <- estimateDispersions(deseq_Data)
+plotDispEsts(deseq_Data)
+#### First, DESeq2 calculates the dispersion for each gene (black spots). 
+#### Then it fits a model to it (red line), and then calculates for each gene a 
+#### mix of the gene-wise dispersion and the model-derived dispersion (blue dots). 
+#### Genes that show unusually high dispersion are identified as outliers (blue circles) 
+#### and will be assigned the gene-wise dispersion (Love, Huber, and Anders 2014).
+#### The most often applied analysis for gene expression data is the calculation 
+#### of differential expression. Let’s derive the genes that behave differently 
+#### between oncogenes and the control.
+
+output <- DESeq(deseq_Data)
+resultsNames(output)
+#### DESeq2 has now calculated differential expressions for all listed comparisons
+#### How does it compare?
+#### 
+#### How does it calculate? --> Manual
+
+#### now we can look at the Comparisons:
+
+CTNNB1_vs_Cntrl <- results(output, contrast = c("oncogene", "CTNNB1", "cntrl"))
+summary(CTNNB1_vs_Cntrl)
+sum(CTNNB1_vs_Cntrl$padj < 0.1, na.rm = T)
+
+#### An MA plot visualizes differences between two groups relative to average signal intensity. 
+#### This is useful to assess potential biases in the data. Typically, 
+#### most peak intensities aren't expected to change between conditions. 
+#### This means points in the plot should be grouped around a horizontal line at 0, 
+#### corresponding to no change. MA plots are also useful to get a quick visual impression 
+#### of how large the differences between groups are.
+#### MA == plot of log-intensity ratios (M-values) vs. log-intensity averages (A-values)
+
+plotMA(CTNNB1_vs_Cntrl, main = "MA Plot", ylim = c(-4,4))
+
+#### now let's plot individual genes -
+#### -> select one gene w/ lowest adjusted p-value compared to b-Catenin and Ctrl:
+
+plotCounts(output, gene = which.min(CTNNB1_vs_Cntrl$padj), intgroup = "oncogene")
+
+CTNNB1_genes <- deseq_Data %>%
+  mcols() %>%
+  as_tibble() %>%
+  dplyr::select(gene) %>%
+  filter(CTNNB1_vs_Cntrl$padj < 0.05)
+
+CTNNB1_gene <- deseq_Data %>%
+  mcols() %>%
+  as_tibble() %>%
+  dplyr::select(gene) %>%
+  filter(CTNNB1_vs_Cntrl$padj < 0.0000000000000000000000000001) %>%
+  pull
+
+CTNNB1_vs_Cntrl_tibble <- CTNNB1_vs_Cntrl %>%
+  as_tibble() %>%
+  mutate(min_padj = min(padj, na.rm = T))
+
+CTNNB1_gene2 <- deseq_Data %>%
+  mcols() %>%
+  as_tibble() %>%
+  dplyr::select(gene) %>%
+  filter(CTNNB1_vs_Cntrl_tibble$padj == CTNNB1_vs_Cntrl_tibble$min_padj) %>%
+  pull
+
+gene <- rpm %>%
+  filter(ensg == "ENSMUSG00000049350")
+
+###### COMPLETE! which gene is that?
+###### use ggplot() for similar plot group vs. normalized count
+norm_Counts %>%
+  rownames_to_column("ensg") %>%
+  filter(ensg %in% gene$ensg) %>%
+  pivot_longer(names_to = "group",
+               values_to = "normalizedcount", -ensg) %>%
+  mutate(group = str_replace(group, pattern = "CTNNB1.1", replacement = "CTNNB1")) %>%
+  mutate(group = str_replace(group, pattern = "BRAF.1", replacement = "BRAF")) %>%
+  mutate(group = str_replace(group, pattern = "PIK3CA.1", replacement = "PIK3CA")) %>%
+  mutate(group = str_replace(group, pattern = "PIK3CA+CTNNB1.1", replacement = "PIK3CA+CTNNB1")) %>%
+  mutate(group = str_replace(group, pattern = "cntrl.1", replacement = "cntrl")) %>%
+  mutate(group = str_replace(group, pattern = "KRAS.1", replacement = "KRAS")) %>%
+  mutate(group = factor(group, levels = c("BRAF", 
+                                          "CTNNB1",
+                                          "KRAS",
+                                          "PIK3CA",
+                                          "PIK3CA+CTNNB1",
+                                          "cntrl"))) %>%
+  ggplot(aes(group, normalizedcount)) +
+  geom_point(size = 2, alpha = 0.5, shape = 1) +
+  scale_y_log10() +
+  theme_bw() +
+  ggtitle(gene$gene_name)
+
+
+# 4.5 GO-Enrichment
+#### take genes that are differently expressed in BRAF mutant --> try to characterize better
+#### calculate GO-Term enrichment for selected GO-terms, library(Bioconductor) == useful
+#### prepare data for the analysis:
+
+allGenes <- mcols(deseq_Data)$gene
+gene_Vector <- as.integer(allGenes %in% CTNNB1_genes)
+names(gene_Vector) <- allGenes
+
+#### GO Analysis ~~ tests categorical membership vs. hypergeometric null distribution
+#### however: null distribution has to be adjusted for RNA-seq data:
+#### must be adjusted by the expected length bias --> use probability weighting fct. (PWF)
+#### PWF == fct. that gives the probability that a gene will be differentially expressed (based on length only)
+#### use nullp() from library(goseq)
+#### use annotation package library(geneLenDataBase) to account for length bias of genes!
+
+library(geneLenDataBase)
+library(goseq)
+supportedGenomes() %>%
+  as_tibble() %>%
+  filter(species == "Mouse")
+#### Problem: our genome is mapped to version mm10 
+#### --> use Bioconductor package TxDb.Mmusculus.UCSC.mm10.ensGene
+library(BiocManager)
+install("TxDb.Mmusculus.UCSC.mm10.ensGene", force = T)
+library(TxDb.Mmusculus.UCSC.mm10.ensGene)
+pwf <- nullp(gene_Vector, "mm10", "ensGene")
+#### Can't find mm10/ensGene length data in genLenDataBase...
+#### Found the annotation package, TxDb.Mmusculus.UCSC.mm10.ensGene
+#### Trying to get the gene lengths from it.
+#### Error in if (matched_frac == 0) { : missing value where TRUE/FALSE needed
+
+
+#### proceeding with "mm9" for now.
+library(geneLenDataBase)
+library(BiocManager)
+install.packages()
+library(TxDb.Mmusculus.UCSC.mm9.ensGene)
+
+supportedGenomes() %>%
+  as_tibble() %>%
+  filter(species == "Mouse")
+
+pwf <- nullp(gene_Vector, "mm9", "ensGene")
+
+GO_Analysis_BP <- goseq(pwf, "mm10", "ensGene", test.cats = "GO:BP")
+
+Go_Enriched_BP <- GO_Analysis_BP %>%
+                  as_tibble() %>%
+                  mutate(p.adjust = p.adjust(over_represented_pvalue, method = "BH")) %>%
+                  filter(p.adjust < 0.01)
+
+
+#### now: significant categories collected..
+#### use GO-Terms from GO.db for more detailed descriptions of the GO-Terms
+GOTERM[[ GoEnrichedBP$category[1] ]]
+
+#### Compare GO-Enrichment w/o accounting for length bias --> method = "Hypergeometric"
+GO_Analysis_BP_hyper <- goseq(pwf, "mm10", "ensGene", test.cats = "GO:BP", method = "Hypergeometric")
+Go_Enriched_BP_hyper <- GO_Analysis_BP_hyper %>%
+  as_tibble() %>%
+  mutate(p.adjust = p.adjust(over_represented_pvalue, method = "BH")) %>%
+  filter(p.adjust < 0.01)
+
+diff <- setdiff(Go_Enriched_BP, Go_Enriched_BP_hyper)
+
+#### repeat analysis for GO-categories: "Cellular Compartment"
+####                                    "Molecular Function"
+
+
+
+
+# CHAPTER 5 - BRANDT ET AL. 2019 - Cy_TOF NORMAL ###############################
+#### we will analyse Cy-TOF data from mouse intestinal organoids
+
+# 5.1 Loading libraries and data
+library(tidyverse)
+library(viridis)
+
+data      <- read_csv("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/limos_180907_R_course.csv")
+name.key  <- read_csv("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/name_key.csv")
+
+#### what are the columns? Type, range, values?
+arrange(data)
+data %>%
+  dplyr::select(Ce140Di:Pt195Di) %>%
+  summary()
+arrange(name.key)
+#### which perturbations are contained in the data?
+#### names of cell lines?
+
+#### Option 1, renaming:
+col_table <- tibble(colnames = colnames(data)) %>%
+  left_join(name.key, by = c("colnames" = "channel")) %>%
+  mutate(new_colnames = ifelse(is.na(name), colnames, name))
+colnames(data) <- col_table %>%
+  pull(new_colnames)
+
+
+
+#### Option 2:
+col_rename <- tibble(channel = colnames(data)) %>%
+  left_join(name.key) %>%
+  mutate(new_colnames = ifelse(is.na(name), channel, name)) %>%
+  pull(new_colnames)
+new_columns <- name.key$channel
+names(new_columns) <- name.key$name
+data <- data %>%
+  dplyr::rename(new_columns)
+
+
+
+# 5.2 Quality Checks
+#### plot scatter plots of one channel vs. time --> to spot irregularities
+#### alpha < 1 makes density more visible
+#### adding density info (--> geom_density_2d) helps interpretation
+
+
+data %>%
+  ggplot(aes(Time, DNA_191Ir)) + #col = line
+  geom_point(alpha = 0.2) +
+  geom_density_2d() +
+  geom_smooth()
+
+
+library(hexbin)
+data %>%
+  ggplot(aes(Time, DNA_191Ir)) +
+  geom_hex(bins = 128,
+           show.legend = F, aes(col = ..count..)) +
+  scale_fill_viridis(option = "inferno") +
+  scale_color_viridis(option = "inferno") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()
+  )
+
+# plot 4 markers in facet_wrap
+
+data_piv <- data %>%
+  dplyr::slice(1:10000) %>%
+  pivot_longer(values_to = "value",
+               names_to = "marker",
+               cols = c(Axin2, cCasp3, Ce140Di, CD24)) %>%
+  dplyr::select(Time, value, marker)
+
+  
+data_piv %>%
+  ggplot(aes(Time, value)) +
+  geom_point(alpha = 0.3, size = 0.5) +
+  geom_density_2d() +
+  geom_smooth() +
+  facet_wrap(~ marker, scales = "free_y")
+  
+
+# 5.3 Filter and Scale the data
+#### produce scatterplot
+data %>%
+  ggplot(aes(Ce140Di, DNA_191Ir)) +
+  geom_point(size = 0.1)
+#### set cutoff at ~ 750, blue is nice
+data %>%
+  ggplot(aes(Ce140Di, DNA_191Ir)) +
+  geom_point(size = 0.1) +
+  geom_vline(xintercept = 750, col = "blue")
+
+#### create new column --> beads_out: T or F
+# Normalization beads were measured alongside our cells. These beads are 
+# labelled with a well defined mixture of isotopes across the entire mass range 
+# and were used to account for day to day sensitivity changes in the machine’s detector. 
+# We need to filter out the bead events, so they don’t end up in our analysis. 
+# Because only beads are labelled with Cerium 140 (Ce140Di) we can use that channel 
+# to set an easy 1D cut-off.
+data <- data %>%
+  mutate(beads_out = ifelse(Ce140Di > 750, F,T))
+
+data %>%
+  dplyr::count(., beads_out) %>%
+  mutate(perc = n / sum(n) * 100)
+
+
+
+
+#### look at values of the markers
+#### visualize distributions with box-/violin plots
+#### beads should be filtered out
+
+
+data %>%
+  pivot_longer(pChk2:Dead_cells_195Pt,
+               names_to = "marker",
+               values_to = "value") %>%
+  ggplot(aes(marker, log2(value), col = marker)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+data %>%
+  pivot_longer(pChk2:Dead_cells_195Pt,
+               names_to = "marker",
+               values_to = "value") #%>%
+  ggplot(aes(marker, log2(value), col = marker)) +
+  geom_violin() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#### use pseudo-count to include "0" values
+data <- data %>%
+  mutate_at(vars(pChk2:Dead_cells_195Pt), function(x) log2(x+1))
+
+#### Challenges in mass cytometry:
+#### lack of scatter info =!= flow cytometry
+#### therefore DNA-Intercalator & Event length used --> ggplot
+
+
+data %>%
+  filter(beads_out) %>%
+  ggplot(aes(DNA_191Ir, Event_length)) +
+  geom_point(alpha = 0.1, size = 0.3) +
+  geom_density_2d() +
+  geom_vline(xintercept = 7.25, col = "blue") +
+  geom_vline(xintercept = 9.25, col = "blue") +
+  geom_hline(yintercept = 12, col = "blue") +
+  geom_hline(yintercept = 16, col = "blue")
+  
+#### visualize a new 2D filter that would filter out doublets and debris
+
+data <- data %>%
+  mutate(singlets = ifelse(  Event_length <= 16 &
+                             Event_length >= 12 &
+                             DNA_191Ir >= 7.25 &
+                             DNA_191Ir <= 9.25, T, F))
+  
+#### detect apoptotic cells & cell debris
+#### use the CISPLATIN stained samples (compound binds covalently to proteins,
+#### but cannot easily penetrate the cell membrane)
+#### ==> only cells with a comprimised cell membrane should have a high signal in the PLATIN channel!
+
+#### make scatter plot of DNA vs. dead cells (no beads, singlets only)
+#### new filter against high platin content (apop + debris)
+data %>%
+  filter(beads_out) %>%
+  filter(singlets) %>%
+  ggplot(aes(DNA_191Ir, Dead_cells_195Pt)) +
+  geom_point(alpha = 0.3) +
+  geom_density_2d() +
+  geom_hline(yintercept = 11.25, col = "blue")
+
+#### create new col called "low_platin" 
+#### --> singlets get label "T"
+#### --> doublets + debris get "F"
+data <- data %>%
+  mutate(low_platin = ifelse(Dead_cells_195Pt < 11.25, T,F))
+
+#### scatter plot DNA vs. dead cells, color-coded by low_platin
+#### no beads, singlets only
+
+data %>%
+  filter(beads_out) %>%
+  filter(singlets) %>%
+  ggplot(aes(DNA_191Ir, Dead_cells_195Pt, col = low_platin)) +
+  geom_point(alpha = 0.3) +
+  geom_density2d()
+
+data %>%
+  filter(beads_out) %>%
+  filter(singlets) %>%
+  filter(low_platin == T) %>%
+  ggplot(aes(DNA_191Ir, Dead_cells_195Pt, col = low_platin)) +
+  geom_point(alpha = 0.3) +
+  geom_density2d()
+
+
+#### Percentage of data with no beads + singlets + low_platin
+#### 95483/114932 = 0.8307782 ??
+
+# 5.4 Principal Component Analysis
+
+pca.plot.data <- data %>%
+  filter(  beads_out &
+           singlets &
+           low_platin)
+#### my Alternative
+#low_pt <- data %>%
+#  filter(beads_out) %>%
+#  filter(singlets) %>%
+#  filter(low_platin == T)
+
+#### optional to get plot like in paper: filter untreated cells too
+#### filter(treatment == "untreated" & line == "KRAS")
+
+pca <- data %>%
+  filter(beads_out, singlets, low_platin) %>%
+  dplyr::select(c(CD24, CD44, EphB2, Krt20, cCasp3)) %>%
+  scale() %>%
+  prcomp()
+
+pca.plot.data <- pca$x %>%
+  as_tibble() %>%
+  bind_cols(pca.plot.data, .)
+
+#### normal plot
+pca.plot.data %>%
+  ggplot(aes(PC1, PC2)) +
+  #scale_x_reverse() +
+  geom_point(size = 0.1)
+
+#### colored by CD44
+pca.plot.data %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_point(size = 0.1) +
+  scale_color_viridis(option = "inferno")
+
+
+
+
+
+#### color the dots in your PCA using the values of different signalling markers
+pca_col_data <- pca.plot.data %>%
+  pivot_longer(values_to = "value",
+               names_to = "marker",
+               cols = c(cCasp3, CD24, CD44, EphB2, Krt20)) %>%
+  dplyr::select(PC1, PC2, value, marker)
+
+pca_col_data %>%
+  ggplot(aes(PC1, PC2, col = value)) +
+  geom_point(size = 0.1) +
+  scale_color_viridis(option = "inferno") +
+  facet_wrap(~ marker)
+
+#### diff. color options
+# inferno
+# magma
+# plasma
+# inferno
+# cividis
+
+
+# 5.5 Clustering
+#### k Means
+#### cluster into 6 clustersm color code the pca plot by cluster
+#### cluster cells multiple times, what happens?
+
+fitk <- pca.plot.data %>%
+  dplyr::select(c(CD24, CD44, EphB2, Krt20, cCasp3)) %>%
+  scale() %>%
+  kmeans(centers = 6)
+
+pca.plot.data <- pca.plot.data %>%
+  mutate(cluster = as.factor(fitk$cluster))
+
+#library(RColorBrewer)
+#display.brewer.all()
+pca.plot.data %>%
+  ggplot(aes(PC1, PC2, col = cluster)) +
+  geom_point(size = 0.1) +
+  scale_color_brewer(palette = "Dark2",
+                     direction = -1)
+
+
+# 5.6 Heatmap representation of perturbation data
+#### visualize changes in signalling by cluster, treatment, cell line w/ HEATMAP
+#### group by cluster, treatment, cell line
+#### calculate mean signal values within groups for markers of choice
+#### plot w/ geom_tile & facet_grid
+
+heatmap_data <- pca.plot.data %>%
+  pivot_longer(c("p4e-BP1",
+                 "Axin2",
+                 "pERK", 
+                 "IkBa", 
+                 "pMEK",
+                 "p-p38",
+                 "pS6"),
+               names_to = "marker",
+               values_to = "value") %>%
+  group_by(cluster, treatment, line, marker) %>%
+  summarise(value = mean(value))
+
+heatmap_data %>%
+  ggplot(aes(marker,treatment, fill = value)) +
+  geom_tile() +
+  facet_grid(cluster ~ line) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_viridis(option = "inferno")
+
+#### there are some clusters with higher overall signalling activity
+#### how are these clusters characterized? 
+#### (how is the expression of the cell-type markers in these clusters???)
+
+#### Better assess the effects of treatments:
+#### calculate signal changes compared to the untreated control
+#### plot results in similar heatmap
+
+background <- pca.plot.data %>%
+  pivot_longer(c("p4e-BP1",
+                 "Axin2",
+                 "pERK", 
+                 "IkBa", 
+                 "pMEK",
+                 "p-p38",
+                 "pS6"),
+               names_to = "marker",
+               values_to = "value") %>%
+  #### (1) compute mean signal values for the control condition of FLUC untreated
+  filter(treatment == "untreated" & line == "FLUC") %>%
+  group_by(marker) %>%
+  summarise(background_value = mean(value))
+
+heatmap_data %>%
+  left_join(background, by = "marker") %>%
+  #### (2) substact these background values from all other conditions (log2)
+  mutate(log2_fold_change = value - background_value) %>%
+  #### (3) plot w/ geom_tile  +  facet_grid
+  ggplot(aes(marker,treatment, fill = log2_fold_change)) +
+  geom_tile() +
+  facet_grid(cluster ~ line) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_gradient2(low = "blue",
+                       high = "red",
+                       midpoint = 0)
+
+
+# CHAPTER 6 - Cy-TOF ADVANCED #################################################
+
+# loading libraries and content
+library(tidyverse)
+library(cowplot)
+library(viridis)
+library(scales)
+library(sp)
+#install.packages("hexbin")
+library(hexbin)
+theme_set(theme_cowplot())
+
+data      <- read_csv("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/limos_180907_R_course.csv")
+name.key  <- read_csv("~/Documents/Programming/R/BioInf/Dateien für Kurs-20210609/name_key.csv")# %>% deframe()
+#data_named <- data %>% rename(all_of(name.key))
+
+arrange(data)
+arrange(name.key)
+col_table <- tibble(colnames = colnames(data)) %>%
+  left_join(name.key, by = c("colnames" = "channel")) %>%
+  mutate(new_colnames = ifelse(is.na(name), colnames, name))
+colnames(data) <- col_table %>%
+  pull(new_colnames)
+
+
+# 6.2 First Quality Checks (advanced), improved graphics
+
+data %>%
+  ggplot(aes(Time, DNA_191Ir)) +
+  geom_hex(bins = 128,
+           show.legend = F, aes(col = ..count..)) +
+  scale_fill_viridis(option = "inferno") +
+  scale_color_viridis(option = "inferno") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()
+        )
+
+data %>%
+  ggplot(aes(Ce140Di, DNA_191Ir)) +
+  geom_point(size = 0.1) +
+  geom_vline(xintercept = 750, col = "blue")
+
+data <- data %>%
+  mutate(beads_out = between(Ce140Di, -Inf, 750))
+# normal: data <- data %>%
+#  mutate(beads_out = ifelse(Ce140Di > 750, F,T))
+
+plot <- data %>%
+  pivot_longer(pChk2:Dead_cells_195Pt,
+               names_to = "marker",
+               values_to = "values") %>%
+  ggplot(aes(marker, values, col = marker)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+plot + geom_boxplot()
+plot + geom_violin()
+plot + geom_violin() + scale_y_log10()
+
+# change to log2 scale
+plot +
+  geom_violin() +
+  scale_y_continuous(trans = "log1p")
+
+# advanced solution: create a custom "asinh" transformer
+## asinh gives obvious hyperbolic functions, respectively compute 
+## hyperbolic cosine, sine, tangent, + inverses
+
+asinh_trans <- function(x) {
+  trans_new(
+    name = "asinh",
+    transform = "asinh",
+    inverse = "sinh",
+    format = trans_format("log10", math_format(10^.x))
+  )
+}
+
+plot + geom_violin() + scale_y_continuous(trans = "asinh", breaks = c(10^(1:4)))
+
+# plot as density plots instead, use facet_wrap to splot up multiple plots by marker
+
+data %>%
+  pivot_longer(pChk2:Dead_cells_195Pt,
+               names_to = "marker",
+               values_to = "value") %>%
+  ggplot(aes(value, col = marker)) +
+  geom_line(stat = "density") +
+  facet_wrap(~ marker, scales = "free_y", ncol = 4) +
+  scale_x_continuous(trans = "asinh", breaks = c(10^(1:4)))
+
+
+
+
+# filter data for beads_out
+# produce scatter plot for DNA vs. Event_length
+# visualize a new 2D filter for filtering doublets + debris, save filter
+
+data %>%
+  filter(beads_out) %>%
+  ggplot(aes(DNA_191Ir, Event_length)) +
+  geom_point(size = 0.1) +
+  geom_density_2d() +
+  annotate("rect",
+           xmin = 70, xmax = 1300,
+           ymin = 12, ymax = 15,
+           col = "red", alpha = 0) +
+  scale_x_continuous(trans = "asinh",
+                     breaks = c(10^(1:4)),
+                     limits = c(0, 1e4)) +
+  background_grid(major = "xy",
+                  minor = "none")
+
+
+data <- data %>%
+  mutate(singlets = between(DNA_191Ir, 70, 1300) & 
+                    between(Event_length, 12, 15))
+
+#### detect apoptotic cells & cell debris
+#### use the CISPLATIN stained samples (compound binds covalently to proteins,
+#### but cannot easily penetrate the cell membrane)
+#### ==> only cells with a comprimised cell membrane should have a high signal in the PLATIN channel!
+#### make scatter plot of DNA vs. dead cells (no beads, singlets only)
+#### new filter against high platin content (apop + debris)
+
+
+data %>%
+  filter(beads_out) %>%
+  ggplot(aes(DNA_191Ir, Dead_cells_195Pt)) +
+  geom_point(size = 0.1) +
+  geom_density_2d() +
+  background_grid(major = "xy", minor = "none") +
+  scale_x_continuous(trans = "asinh", breaks = c(10^(1:4))) +
+  scale_y_continuous(trans = "asinh", breaks = c(10^(1:4))) +
+  # add polygon
+  annotate(geom = "polygon",
+           x = c(70, 70, 1300, 1300),
+           y = c(8, 1000, 6000, 19),
+           col = "blue",
+           fill = "transparent")
+
+
+data <- data %>%
+  mutate(low_plat = point.in.polygon(point.x = DNA_191Ir,
+                                     point.y = Dead_cells_195Pt,
+                                     pol.x = c(70, 70, 1300, 1300),
+                                     pol.y = c(8, 1000, 6000, 19)))
+
+
+# 6.3 PCA Advanced
+
+
+pca.plot.data <- data %>%
+  dplyr::filter(beads_out & low_plat & singlets) #%>%
+  filter(treatment == "untreated" & line == "KRAS")
+
+pca <- pca.plot.data %>%
+  dplyr::select(c(CD24, CD44, EphB2, Krt20, cCasp3)) %>%
+  mutate_all(asinh) %>%
+  scale() %>%
+  prcomp()
+
+
+pca.plot.data <- pca$x %>%
+  as_tibble() %>%
+  bind_cols(pca.plot.data, .)
+
+
+pca.plot <- pca.plot.data %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_point(size = 0.1) +
+  scale_x_reverse()
+p1 <- pca.plot +
+  aes(col = pERK) +
+  scale_color_viridis(option = "inferno",
+                      trans = "asinh",
+                      breaks = c(10^(1:4)))
+p2 <- pca.plot +
+  aes(col = pS6) +
+  scale_color_viridis(option = "inferno",
+                      trans = "asinh",
+                      breaks = c(10^(1:4)))
+p3 <- pca.plot +
+  aes(col = EphB2) +
+  scale_color_viridis(option = "inferno",
+                      trans = "asinh",
+                      breaks = c(10^(1:4)))
+p4 <- pca.plot +
+  aes(col = cCasp3) +
+  scale_color_viridis(option = "inferno",
+                      trans = "asinh",
+                      breaks = c(10^(1:4)))
+plot_grid(p1, p2, p3, p4, nrow = 2) # col options above: inferno, magma, plasma, cividis
+
+plot_like_five <- pca.plot.data %>%
+  pivot_longer(values_to = "value",
+               names_to = "marker",
+               cols = c(pERK, pS6, EphB2, cCasp3)) %>%
+  dplyr::select(PC1, PC2, value, marker)
+
+
+plot_like_five %>%
+  ggplot(aes(PC1, PC2, col = value)) +
+  geom_point(size = 0.1) +
+  scale_x_reverse() +
+  scale_color_viridis(option = "inferno",
+                      trans = "asinh",
+                      breaks = c(10^(1:4))) +
+  facet_wrap(~ marker)
+
+
+
+# 6.4 Clustering advanced (kMeans)
+
+fitk <- pca.plot.data %>%
+  dplyr::select(c(CD24, CD44, EphB2, Krt20, cCasp3)) %>%
+  mutate_all(asinh) %>%
+  kmeans(centers = 6)
+
+
+pca.plot.data.fit <- pca.plot.data %>%
+  mutate(cluster = as_factor(fitk$cluster))
+
+pca.plot.data.fit %>%
+  ggplot(aes(PC1, PC2, col = cluster)) +
+  geom_point(size = 0.5)
+
+# 6.5 Heatmap representation of perturbation data advanced
+
+heatmap_data <- pca.plot.data.fit %>%
+  pivot_longer(c("p4e-BP1", "Axin2", "pERK", "IkBa", "pMEK", "p-p38", "pS6"),
+               names_to = "marker",
+               values_to = "value") %>%
+  group_by(cluster, treatment, line, marker) %>%
+  summarise(value = mean(value))
+
+heatmap_data %>%
+  ggplot(aes(marker,treatment, fill = value)) +
+  geom_tile() +
+  facet_grid(cluster ~ line) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_viridis(option = "inferno", 
+                     trans = "asinh", 
+                     breaks = c(10^(1:4)))
+
+# background stuff
+background <- pca.plot.data.fit %>%
+  pivot_longer(c("p4e-BP1", "Axin2", "pERK", "IkBa", "pMEK", "p-p38", "pS6"),
+               names_to = "marker",
+               values_to = "value") %>%
+  mutate(value = log2(value + 1)) %>% # forgot this line.. now everything works!
+  filter(treatment == "untreated", line == "FLUC") %>%
+  group_by(marker) %>%
+  summarise(background_value = mean(value))
+
+
+#### Bonus: Transform data points with log2(x + 1) to get more descriptive log2 fold changes
+
+pca.plot.data.fit %>% 
+  pivot_longer(c("p4e-BP1", "Axin2", "pERK", "IkBa", "pMEK", "p-p38", "pS6"), 
+               names_to = "marker", 
+               values_to = "value") %>%
+  mutate(value = log2(value + 1)) %>% 
+  group_by(cluster, treatment, line, marker) %>% 
+  summarise(value = mean(value)) %>% 
+  left_join(background, by = "marker") %>%
+  mutate(log2fc = value - background_value) %>% 
+  
+  ggplot(aes(x = marker, y = treatment, fill = log2fc)) + 
+  geom_tile() + facet_grid( cluster ~ line) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  scale_fill_gradient2(low = "blue",
+                       high = "red", 
+                       midpoint = 0)
+
+
